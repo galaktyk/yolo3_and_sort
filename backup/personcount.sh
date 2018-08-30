@@ -1,0 +1,1 @@
+xfce4-terminal -e "/home/batman/proj/deep_sort_yolov3/jread.sh" -H
