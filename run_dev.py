@@ -43,7 +43,7 @@ def main(yolo):
 
 
  
-    source='gst.jpg'  # 0 or youtube or jpg
+    source=0  # 0 for webcam or youtube or jpg
     FLAGScsv=1
 
     if FLAGScsv :
@@ -135,8 +135,7 @@ def main(yolo):
                 buff.write(img_bin.read())
                 buff.seek(0)        
                 frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB
-                #frame = cv2.cvtColor(temp_img, cv2.COLOR_RGB2BGR)
-                frame=adjust_gamma(frame,gamma=1.6)
+                #frame=adjust_gamma(frame,gamma=1.6)
                 
                 frame = cv2.resize(frame,(608,608))
             except OSError :
@@ -146,6 +145,8 @@ def main(yolo):
 
         else :
             ret, frame = video_capture.read()
+            frame = cv2.resize(frame,(608,608)) # maybe your webcam is not in the right size
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) # because opencv read as BGR
             
             
             if ret != True:
@@ -332,9 +333,11 @@ def main(yolo):
       
 
         #out.write(frame)
+        #
+
         cv2.imshow('', frame)
         
-        #print('process time : ',time.time()-tpro)
+        print('process time : ',time.time()-tpro)
         tpro=time.time()
 
 
