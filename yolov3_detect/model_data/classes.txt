@@ -1,0 +1,6 @@
+male
+female
+laptop
+phone
+tablet
+book

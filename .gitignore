@@ -4,3 +4,7 @@ __pycache__/
 *.mp4
 
 *.avi
+
+yolov3_detect/logs/
+
+yolov3_detect/testing/
