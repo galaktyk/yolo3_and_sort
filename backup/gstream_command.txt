@@ -1,0 +1,31 @@
+##SEND
+gst-launch-1.0 videotestsrc is-live=true ! x264enc tune="zerolatency" threads=1 ! rtph264pay config-interval=1 pt=96 ! gdppay ! tcpserversink host=127.0.0.1 port=6006
+
+
+##RECEIVE
+gst-launch-1.0 -v tcpclientsrc host=127.0.0.1 port=6006  ! gdpdepay ! rtpjitterbuffer ! rtph264depay ! avdec_h264 ! jpegenc ! multifilesink post-messages=true location="gst.jpg"
+
+
+
+
+srtserversink uri=srt://:8888/
+srtclientsrc srt://192.168.1.55:8888 ! decodebin ! autovideosink
+
+# EQUAL
+videoconvert ! autovideosink
+jpegenc ! multifilesink post-messages=true location="gst.jpg"
+
+
+
+
+jsend.sh
+raspivid -n -t 0 -w 608 -hf -vf -fps 30 -o - | \
+gst-launch-1.0 fdsrc ! h264parse ! rtph264pay config-interval=1 pt=96 ! \
+gdppay ! tcpserversink host=0.0.0.0 port=6006
+
+
+
+
+gst-launch-1.0 -v tcpclientsrc host=localhost port=6006 \
+ ! gdpdepay ! rtpjitterbuffer ! rtph264depay ! avdec_h264 ! 
+jpegenc ! multifilesink post-messages=true location="gst.jpg"
