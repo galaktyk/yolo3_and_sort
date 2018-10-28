@@ -1,6 +1,6 @@
 import sys
 import os
-os.chdir(sys.path[0])
+
 
 import argparse
 from yolov3_core import YOLO

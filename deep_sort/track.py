@@ -71,7 +71,8 @@ class Track:
         self.hits = 1
         self.age = 1
         self.time_since_update = 0
-
+        self.gender = None
+        self.gender24frame = [None]*24
         self.state = TrackState.Tentative
         self.features = []
         if feature is not None:
@@ -164,3 +165,9 @@ class Track:
     def is_deleted(self):
         """Returns True if this track is dead and should be deleted."""
         return self.state == TrackState.Deleted
+
+    def update_gender(self,gender=None):
+        self.gender24frame.pop(0)
+        self.gender24frame.append(gender)        
+        self.gender = max(set(self.gender24frame), key=self.gender24frame.count)
+        

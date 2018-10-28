@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import division, print_function, absolute_import
+import sys
+sys.path.insert(0, 'yolov3_detect')
 
 import os
 from timeit import time
 import warnings
-import sys
+
 import cv2
 import numpy as np
 
@@ -15,22 +17,20 @@ from deep_sort import preprocessing
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
-from tools import generate_detections as gdet
+from wrapper_tools import generate_detections as gdet
 from deep_sort.detection import Detection as ddet
 
 import io
 import numpy
-from tools.save_csv import save_csv
+from wrapper_tools.save_csv import save_csv
 warnings.filterwarnings('ignore')
 import pickle
 
 
-
-
 def main(yolo):
-
-
- 
+    os.chdir('..')
+    
+    
     source='Walking Next to People.mp4'  # 0 for webcam or youtube or jpg
     FLAGScsv=0
 
@@ -45,13 +45,13 @@ def main(yolo):
     max_cosine_distance = 1.5
     nn_budget = None
     nms_max_overlap = 1.0
-    
+   
    # deep_sort 
     model_filename = 'deep_sort/model_data/mars-small128.pb'
     encoder = gdet.create_box_encoder(model_filename,batch_size=1)
     
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-    tracker = Tracker(metric,max_iou_distance=0.7, max_age=30, n_init=1)
+    tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3)
 
 
     video_capture = cv2.VideoCapture(source)           
@@ -72,9 +72,7 @@ def main(yolo):
                 buff = io.BytesIO()
                 buff.write(img_bin.read())
                 buff.seek(0)        
-                frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB
-        
-                
+                frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB               
                 
             except OSError :
                 continue
@@ -93,23 +91,9 @@ def main(yolo):
         # ______________________________________________________________________________________________________________________________DETECT WITH YOLO 
         t1 = time.time()       
 
-        return_boxes,return_classes = yolo.detect_image(frame,boxes_only = True)
-
-        print(return_classes)
-
-        features = encoder(frame,return_boxes)       
-       
-
-
-        # score to 1.0 here).
+        return_boxes,return_classes = yolo.detect_image(frame,boxes_only = True)  
+        features = encoder(frame,return_boxes) 
         detections = [Detection(bbox, 1.0, feature) for bbox, feature in zip(return_boxes, features)]     
-
-        # # Run non-max suppression.
-        # boxes = np.array([d.tlwh for d in detections])
-        # scores = np.array([d.confidence for d in detections])
-        # indices = preprocessing.non_max_suppression(boxes, nms_max_overlap, scores) #index that filtered
-        
-        # detections = [detections[i] for i in indices]
         
         # ______________________________________________________________________________________________________________________________DRAW DETECT BOX
 
@@ -117,32 +101,19 @@ def main(yolo):
             bbox = detections[i].to_tlbr()
             cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[return_classes[i]], 2)
 
-
-
-        # ___________________________________________________________________________Call the tracker 
+        # ______________________________________________________________________________________________________________________________Call the tracker 
         tracker.predict()
-        tracker.update(detections)
-        
-        
-       
-
-       # __________________________________________________________________________________________________________________________DRAW TRACK RECTANGLE      
+        tracker.update(detections,return_classes)  # feed detections
+        # __________________________________________________________________________________________________________________________DRAW TRACK RECTANGLE      
         ina_now=set();inb_now=set()   
         for track in tracker.tracks:
             if track.is_confirmed() and track.time_since_update >1 :
-                continue 
-            
-            bbox = track.to_tlbr()
-            
+                continue             
+            bbox = track.to_tlbr()           
 
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 1)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
-
-           
-                 
-
-
-           
+            cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
 
                 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for show 
@@ -150,8 +121,8 @@ def main(yolo):
         out.write(frame)
         cv2.imshow('', frame)
         
-        print(frame.shape[:2])
-        print('process time : ',time.time()-tpro)
+      
+        #print('process time : ',time.time()-tpro)
         tpro=time.time()
 
 
@@ -165,7 +136,6 @@ def main(yolo):
 
 
 
-
-
 if __name__ == '__main__':
+    
     main(YOLO())

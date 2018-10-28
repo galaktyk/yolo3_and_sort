@@ -8,7 +8,9 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.layers.normalization import BatchNormalization
 from keras.models import Model
 from keras.regularizers import l2
-from tools.utils import compose
+from yolov3_tools.utils import compose
+
+
 
 
 @wraps(Conv2D)

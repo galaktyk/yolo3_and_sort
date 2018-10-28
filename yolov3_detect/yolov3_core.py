@@ -1,7 +1,9 @@
 import os
 import sys
-os.chdir(sys.path[0])
-import colorsys
+
+from yolov3_tools.model import post_nms, yolo_body
+from yolov3_tools.utils import letterbox_image
+
 from timeit import default_timer as timer
 import cv2
 import numpy as np
@@ -10,14 +12,16 @@ from keras.models import load_model
 from keras.layers import Input
 from PIL import Image, ImageFont, ImageDraw
 
-from tools.model import post_nms, yolo_body
-from tools.utils import letterbox_image
 from keras.utils import multi_gpu_model
 from keras.utils import plot_model
 from keras.engine import InputLayer
+
+
+os.chdir(sys.path[0])
+
 class YOLO(object):
     _defaults = {
-        "model_path": 'logs/000/ep078-loss17.266-val_loss17.704.h5',
+        "model_path": 'logs/000/ep068-loss16.822-val_loss18.782.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
         "classes_path": 'model_data/classes.txt',
         "score" : 0.3,
