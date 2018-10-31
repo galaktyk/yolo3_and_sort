@@ -42,7 +42,7 @@ class Tracker:
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
         self.n_init = n_init
-
+        self.event = False
         self.kf = kalman_filter.KalmanFilter()
         self.tracks = []
         self._next_id = 1
@@ -56,15 +56,7 @@ class Tracker:
             track.predict(self.kf)
 
     def update(self, detections,return_classes):
-        """Perform measurement update and track management.
-
-        Parameters
-        ----------
-        detections : List[deep_sort.detection.Detection]
-            A list of detections at the current time step.
-
-        """
-        # Run matching cascade.
+        self.event = False
         matches, unmatched_tracks, unmatched_detections = self._match(detections)
 
 
@@ -78,11 +70,13 @@ class Tracker:
         
 
 
-
+        # these are when event happen
         for track_idx in unmatched_tracks:
             self.tracks[track_idx].mark_missed()
+            self.event = True
         for detection_idx in unmatched_detections:
             self._initiate_track(detections[detection_idx])
+            self.event = True
         self.tracks = [t for t in self.tracks if not t.is_deleted()]
 
         # Update distance metric.
@@ -149,3 +143,4 @@ class Tracker:
             mean, covariance, self._next_id, self.n_init, self.max_age,
             detection.feature))
         self._next_id += 1
+    

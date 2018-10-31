@@ -170,4 +170,4 @@ class Track:
         self.gender24frame.pop(0)
         self.gender24frame.append(gender)        
         self.gender = max(set(self.gender24frame), key=self.gender24frame.count)
-        
+    

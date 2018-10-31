@@ -27,18 +27,22 @@ warnings.filterwarnings('ignore')
 import pickle
 
 
+
+
+
+
 def main(yolo):
     os.chdir('..')
     
     
     source='Walking Next to People.mp4'  # 0 for webcam or youtube or jpg
-    FLAGScsv=0
+    FLAGScsv=1
 
     if FLAGScsv :
         csv_obj=save_csv() 
         
     colors = {"male":(0,0,255),"female":(255,0,0)}
-        
+    use_device = False 
     
     tpro=0.
    # Definition of the parameters
@@ -105,7 +109,8 @@ def main(yolo):
         tracker.predict()
         tracker.update(detections,return_classes)  # feed detections
         # __________________________________________________________________________________________________________________________DRAW TRACK RECTANGLE      
-        ina_now=set();inb_now=set()   
+        
+        id_stay = [] 
         for track in tracker.tracks:
             if track.is_confirmed() and track.time_since_update >1 :
                 continue             
@@ -114,7 +119,7 @@ def main(yolo):
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 1)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
-
+            id_stay.append(track.track_id)
                 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for show 
 
@@ -127,11 +132,18 @@ def main(yolo):
 
 
 
+        print(id_stay)
+        if tracker.event and FLAGScsv:            
+            csv_obj.save_event(id_stay)
+
+
+        if use_device and FLAGScsv:
+            csv_obj.update_profile(_id,device)
+
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     out.release()
-    video_capture.release()
-    
+    video_capture.release()    
     cv2.destroyAllWindows()
 
 
