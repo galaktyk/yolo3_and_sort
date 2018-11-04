@@ -8,3 +8,5 @@ __pycache__/
 yolov3_detect/logs/
 
 yolov3_detect/testing/
+
+*.csv

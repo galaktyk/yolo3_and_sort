@@ -40,8 +40,8 @@ def main(yolo):
 
     if FLAGScsv :
         csv_obj=save_csv() 
-        
-    colors = {"male":(0,0,255),"female":(255,0,0)}
+    id_stay_old = []  
+    colors = {"male":(0,0,255),"female":(255,0,0),"None":(255,255,255)}
     use_device = False 
     
     tpro=0.
@@ -55,7 +55,7 @@ def main(yolo):
     encoder = gdet.create_box_encoder(model_filename,batch_size=1)
     
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-    tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3)
+    tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3,_next_id = 1)
 
 
     video_capture = cv2.VideoCapture(source)           
@@ -101,9 +101,9 @@ def main(yolo):
         
         # ______________________________________________________________________________________________________________________________DRAW DETECT BOX
 
-        for i in range(0,len(detections)):
-            bbox = detections[i].to_tlbr()
-            cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[return_classes[i]], 2)
+        # for i in range(0,len(detections)):
+        #     bbox = detections[i].to_tlbr()
+        #     cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[return_classes[i]], 2)
 
         # ______________________________________________________________________________________________________________________________Call the tracker 
         tracker.predict()
@@ -116,11 +116,15 @@ def main(yolo):
                 continue             
             bbox = track.to_tlbr()           
 
-            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 1)
+            cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[str(track.gender)], 2)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             id_stay.append(track.track_id)
-                
+              
+
+
+
+
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for show 
 
         out.write(frame)
@@ -132,8 +136,8 @@ def main(yolo):
 
 
 
-        print(id_stay)
-        if tracker.event and FLAGScsv:            
+      
+        if id_stay!=id_stay_old and FLAGScsv:            
             csv_obj.save_event(id_stay)
 
 
@@ -142,6 +146,7 @@ def main(yolo):
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+        id_stay_old = id_stay
     out.release()
     video_capture.release()    
     cv2.destroyAllWindows()

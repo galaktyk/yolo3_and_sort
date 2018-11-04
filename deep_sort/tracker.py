@@ -37,15 +37,15 @@ class Tracker:
 
     """
 
-    def __init__(self, metric, max_iou_distance=0.7, max_age=30, n_init=1):
+    def __init__(self, metric, max_iou_distance=0.7, max_age=30, n_init=1,_next_id=1):
         self.metric = metric
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
         self.n_init = n_init
-        self.event = False
+        self._next_id = _next_id
         self.kf = kalman_filter.KalmanFilter()
         self.tracks = []
-        self._next_id = 1
+        
 
     def predict(self):
         """Propagate track state distributions one time step forward.
@@ -73,10 +73,10 @@ class Tracker:
         # these are when event happen
         for track_idx in unmatched_tracks:
             self.tracks[track_idx].mark_missed()
-            self.event = True
+            
         for detection_idx in unmatched_detections:
             self._initiate_track(detections[detection_idx])
-            self.event = True
+           
         self.tracks = [t for t in self.tracks if not t.is_deleted()]
 
         # Update distance metric.

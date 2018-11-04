@@ -17,13 +17,14 @@ class save_csv():
 
 
     def save_event(self,id_stay):
-        with open('csv/'+self.event_file,  mode='a') as f: #append mode            
+        with open('csv/'+self.event_file,  mode='a',newline='') as f: #append mode            
             writer=csv.writer(f)
             record=[time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()), str(id_stay)]
             writer.writerow(record)
+
             print('[ INFO ] CSV Appended')
 
-    def update_profile(self,_id,devices)
+    def update_profile(self,_id,devices):
         with open('csv/'+self.event_file,  mode='a') as f:
             writer=csv.writer(f)
             record=[_id, str(id_stay)]
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     obj=save_csv()
     id_stay=[1,2,4]
     
-    obj.save_event(record)
+    obj.save_event(id_stay)
 
    
 
