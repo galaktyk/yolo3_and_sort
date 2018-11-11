@@ -27,7 +27,7 @@ from wrapper_tools.device_register import device_register
 warnings.filterwarnings('ignore')
 import pickle
 
-
+from PIL import Image
 
 
 
@@ -38,7 +38,7 @@ def main(yolo):
     
     source='linus.mp4'  # 0 for webcam or youtube or jpg
     FLAGScsv=1
-
+    dict_devices = {}
     if FLAGScsv :
         csv_obj=save_csv() 
     id_stay_old = []  
@@ -69,6 +69,7 @@ def main(yolo):
     #out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(1280,720),True)
     t_fps=[time.time()]
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
+
     while True:
 
         # get 1 frame                        
@@ -78,7 +79,8 @@ def main(yolo):
                 buff = io.BytesIO()
                 buff.write(img_bin.read())
                 buff.seek(0)        
-                frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB               
+                frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB   
+                        
                 
             except OSError :
                 continue
@@ -114,7 +116,7 @@ def main(yolo):
             label = dev_things[1][i]
 
             cv2.rectangle(frame,(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),(255,255,255), 2)
-            cv2.putText(frame, label,(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (255,0,0),1)
+            cv2.putText(frame, label,(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (255,0,0),2)
 
 
 
@@ -128,27 +130,57 @@ def main(yolo):
         
 
 
-        euc_all = np.array([None,None])
+   
 
-        id_stay = [] 
+        id_stay = []
+
         for track in tracker.tracks:
+            #dev_1p = {track.track_id:None}
+
             if track.is_confirmed() and track.time_since_update >1 :
                 continue             
-            bbox = track.to_tlbr()   
-
+            bbox = track.to_tlbr()   #(min x, miny, max x, max y)
+            bcenter = track.to_xyah()  #(center x, center y, aspect ratio,height)
             # check device
-            euc_1p = device_obj.update_person(track,track.track_id)   
-            euc_all= np.vstack([euc_all, euc_1p])    
+            if (len(detections_dev) != 0) and (len(detections_gen) != 0):
+                euc_1p = device_obj.update_person(bcenter,track.track_id)
+                
+                for connect in euc_1p : #each person
+                    if connect is not  None:
+                        cv2.line(frame,(int(bcenter[0]),int(bcenter[1])),(int(connect[1]),int(connect[2])),(0,255,0),3)
+                        device_label = dev_things[1][int(connect[0])] 
+                        if not dict_devices.get(track.track_id,False) :
+                            dict_devices[track.track_id] = [device_label]
+                      
+                        if device_label not in dict_devices[track.track_id]:
+                            dict_devices[track.track_id].append(device_label)
+                        
+                                
+                       
+                        #dev_1p[1] = dev_1p[1][1:]
 
-            print(euc_all[1:])
+
+
+         
+      
+
+
+            #print(euc_all[1:])
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[str(track.gender)], 2)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
+            
             id_stay.append(track.track_id)
-              
+        
+                
 
 
 
+
+
+
+
+        
 
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for show 
 
@@ -158,7 +190,7 @@ def main(yolo):
         t_fps.append(time.time())
         fps = 1/(t_fps[1]-t_fps[0])
         t_fps.pop(0)
-        cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,470),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
+        cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
         #out.write(frame)
         cv2.imshow('', frame)
         
@@ -173,18 +205,23 @@ def main(yolo):
             csv_obj.save_event(id_stay)
 
 
-        # if use_device and FLAGScsv:
-        #     csv_obj.update_profile(_id,device)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+   
         id_stay_old = id_stay
+
     #out.release()
     video_capture.release()    
     cv2.destroyAllWindows()
+    if FLAGScsv:            
+        csv_obj.save_profile(dict_devices)
 
 
 
 if __name__ == '__main__':
-    
-    main(YOLO())
+    try:
+        main(YOLO())
+    except:
+        raise
+
