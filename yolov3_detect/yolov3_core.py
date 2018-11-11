@@ -120,8 +120,12 @@ class YOLO(object):
             })     
 
         if boxes_only == True:
-            return_boxes = []
-            return_classes = []
+            return_boxes_gen = []
+            return_classes_gen = []
+
+            return_boxes_dev = []
+            return_classes_dev = []
+
             for i, c in reversed(list(enumerate(out_classes))):
                 predicted_class = self.class_names[c]
                 if (predicted_class == 'male') or (predicted_class == 'female'):                    
@@ -137,11 +141,31 @@ class YOLO(object):
                     if y < 0 :
                         h = h + y
                         y = 0 
-                    return_boxes.append([x,y,w,h])
-                    return_classes.append(predicted_class)
+                    return_boxes_gen.append([x,y,w,h])
+                    return_classes_gen.append(predicted_class)
+
+                else:                    
+                    box = out_boxes[i]
+                   # score = out_scores[i]  
+                    x = int(box[1])  
+                    y = int(box[0])  
+                    w = int(box[3]-box[1])
+                    h = int(box[2]-box[0])
+                    if x < 0 :
+                        w = w + x
+                        x = 0
+                    if y < 0 :
+                        h = h + y
+                        y = 0 
+                    return_boxes_dev.append([x,y,w,h])
+                    return_classes_dev.append(predicted_class)
 
 
-            return return_boxes,return_classes
+
+
+
+
+            return [return_boxes_gen,return_classes_gen],[return_boxes_dev,return_classes_dev]
 
 
         if self.test == True and filename != '':
