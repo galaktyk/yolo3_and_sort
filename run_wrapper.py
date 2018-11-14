@@ -35,18 +35,18 @@ from PIL import Image
 def main(yolo):
     os.chdir('..')
     
-    
-    source='linus.mp4'  # 0 for webcam or youtube or jpg
-    FLAGScsv=1
-    dict_devices = {}
+    video_record = 0
+    source='Walking Next to People.mp4'  # 0 for webcam or youtube or jpg
+    FLAGScsv= 1
+    dict_prof = {}
     if FLAGScsv :
         csv_obj=save_csv() 
-    id_stay_old = []  
+    id_stay_old = [[],[]]  
     colors = {"male":(0,0,255),"female":(255,0,0),"None":(255,255,255)}
 
     device_obj = device_register()
     
-    tpro=0.
+
    # Definition of the parameters
     max_cosine_distance = 1.5
     nn_budget = None
@@ -65,8 +65,8 @@ def main(yolo):
 
     print('video source : ',source)   
   
-    #out = cv2.VideoWriter() 
-    #out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(1280,720),True)
+    out = cv2.VideoWriter() if video_record else None
+    out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(1280,720),True) if video_record else None
     t_fps=[time.time()]
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
 
@@ -132,7 +132,8 @@ def main(yolo):
 
    
 
-        id_stay = []
+        id_stay = [[],[]]
+      
 
         for track in tracker.tracks:
             #dev_1p = {track.track_id:None}
@@ -141,43 +142,32 @@ def main(yolo):
                 continue             
             bbox = track.to_tlbr()   #(min x, miny, max x, max y)
             bcenter = track.to_xyah()  #(center x, center y, aspect ratio,height)
+            dict_prof[track.track_id] = [[str(track.gender)],[]]
             # check device
-            if (len(detections_dev) != 0) and (len(detections_gen) != 0):
-                euc_1p = device_obj.update_person(bcenter,track.track_id)
-                
-                for connect in euc_1p : #each person
+            if (len(detections_dev) != 0) and (len(detections_gen) != 0):  # detected some thing
+                euc_1p = device_obj.update_person(bcenter,track.track_id)                
+                for connect in euc_1p : #each person                    
                     if connect is not  None:
                         cv2.line(frame,(int(bcenter[0]),int(bcenter[1])),(int(connect[1]),int(connect[2])),(0,255,0),3)
-                        device_label = dev_things[1][int(connect[0])] 
-                        if not dict_devices.get(track.track_id,False) :
-                            dict_devices[track.track_id] = [device_label]
-                      
-                        if device_label not in dict_devices[track.track_id]:
-                            dict_devices[track.track_id].append(device_label)
-                        
-                                
+                        device_label = dev_things[1][int(connect[0])]                      
+                        if device_label not in dict_prof[track.track_id]:# not write the same device                  
+                            dict_prof[track.track_id][1].append(device_label)
                        
-                        #dev_1p[1] = dev_1p[1][1:]
-
-
-
-         
+            
+            if track.gender == 'male':  # Avoid None
+                id_stay[0].append(track.track_id)
+                dict_prof[track.track_id][0] = ['male']                
+            if track.gender == 'female':
+                id_stay[1].append(track.track_id)
+                dict_prof[track.track_id][0] = ['female']
       
 
 
-            #print(euc_all[1:])
+          
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[str(track.gender)], 2)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             
-            id_stay.append(track.track_id)
-        
-                
-
-
-
-
-
 
 
         
@@ -191,18 +181,16 @@ def main(yolo):
         fps = 1/(t_fps[1]-t_fps[0])
         t_fps.pop(0)
         cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
-        #out.write(frame)
-        cv2.imshow('', frame)
-        
+        out.write(frame) if video_record else None
+        cv2.imshow('', frame)       
       
-        #print('process time : ',time.time()-tpro)
-        tpro=time.time()
-
+       
 
 
       
-        if id_stay!=id_stay_old and FLAGScsv:            
+        if (id_stay != id_stay_old) and FLAGScsv:            
             csv_obj.save_event(id_stay)
+            
 
 
 
@@ -211,11 +199,11 @@ def main(yolo):
    
         id_stay_old = id_stay
 
-    #out.release()
+    out.release() if video_record else None
     video_capture.release()    
     cv2.destroyAllWindows()
     if FLAGScsv:            
-        csv_obj.save_profile(dict_devices)
+        csv_obj.save_profile(dict_prof)
 
 
 
@@ -223,5 +211,6 @@ if __name__ == '__main__':
     try:
         main(YOLO())
     except:
+        #csv_obj.save_profile(dict_prof)
         raise
 

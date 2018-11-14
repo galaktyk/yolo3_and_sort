@@ -19,7 +19,7 @@ class save_csv():
     def save_event(self,id_stay):
         with open('csv/'+self.event_file,  mode='a',newline='') as f: #append mode            
             writer=csv.writer(f)
-            record=[time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()), str(id_stay)]
+            record=[time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()), str(id_stay[0]).replace(', ','-'),str(id_stay[1]).replace(', ','-')]
             writer.writerow(record)
 
    
@@ -29,8 +29,9 @@ class save_csv():
             writer=csv.writer(f)
 
 
-            for row in d.items():     
-                writer.writerow(row)
+            for row_indx in list(d.keys()):
+                if d[row_indx][0] != ['None']:
+                    writer.writerow([row_indx,''.join(d[row_indx][0]),d[row_indx][1]])
 
 
 
@@ -38,9 +39,9 @@ class save_csv():
 if __name__ == '__main__':
    
     obj=save_csv()
-    #id_stay=[1,2,4]
-    d={1:['laptop'],2:['phone','laptop']}
-    
+    id_stay=[[2,11], [10,3]]
+    d={1:[['male'],['laptop']],2:[['female'],['phone']],3:[['None'],['phone']]}
+    #obj.save_event(id_stay)
     obj.save_profile(d)
 
    
