@@ -34,10 +34,10 @@ from PIL import Image
 
 def main(yolo):
     os.chdir('..')
-    
-    video_record = 0
-    source='Walking Next to People.mp4'  # 0 for webcam or youtube or jpg
-    FLAGScsv= 1
+    use_cloud = 1
+    video_record = 1
+    source='MOT_1.mp4'  # 0 for webcam or youtube or jpg
+    FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
         csv_obj=save_csv() 
@@ -66,7 +66,7 @@ def main(yolo):
     print('video source : ',source)   
   
     out = cv2.VideoWriter() if video_record else None
-    out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(1280,720),True) if video_record else None
+    out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(768,576),True) if video_record else None
     t_fps=[time.time()]
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
 
@@ -166,7 +166,7 @@ def main(yolo):
           
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[str(track.gender)], 2)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
-            cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
+            #cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             
 
 
@@ -183,7 +183,7 @@ def main(yolo):
         cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
         out.write(frame) if video_record else None
         cv2.imshow('', frame)       
-      
+        cv2.imwrite('yolo.jpg',frame) if use_cloud == True else False
        
 
 

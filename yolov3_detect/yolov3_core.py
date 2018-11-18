@@ -24,7 +24,7 @@ class YOLO(object):
         "model_path": 'logs/000/ep068-loss16.822-val_loss18.782.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
         "classes_path": 'model_data/classes.txt',
-        "score" : 0.4,
+        "score" : 0.6,
         "iou" : 0.45,
         "model_image_size" : (416, 416),
         "gpu_num" : 1,
