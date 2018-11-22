@@ -34,9 +34,9 @@ from PIL import Image
 
 def main(yolo):
     os.chdir('..')
-    use_cloud = 1
+    use_cloud = 0
     video_record = 0
-    source='walking.mp4'  # 0 for webcam or youtube or jpg
+    source='gstream'  # 0 for webcam or youtube or jpg
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -47,7 +47,7 @@ def main(yolo):
     device_obj = device_register()
 
     if use_cloud:
-        gst_out = cv2.VideoWriter('appsrc ! videoconvert ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000 ! x264enc bitrate=1024 ! \
+        gst_out = cv2.VideoWriter('appsrc ! videoconvert ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000 ! x264enc bitrate=2048 ! \
         h264parse config-interval=10 pt=96 ! mpegtsmux ! queue ! \
         tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
 
@@ -58,19 +58,22 @@ def main(yolo):
    
    # deep_sort 
     model_filename = 'deep_sort/model_data/mars-small128.pb'
-    encoder = gdet.create_box_encoder(model_filename,batch_size=1)
+    encoder = gdet.create_box_encoder(model_filename,batch_size=8)
     
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
     tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3,_next_id = 1)
 
-
-    video_capture = cv2.VideoCapture(source)           
+    if source == 'gstream':
+        video_capture = cv2.VideoCapture('udpsrc port=6006 ! application/x-rtp, payload=96 ! \
+                        rtpjitterbuffer ! rtph264depay ! avdec_h264 ! videoconvert ! appsink sync=false')
+    else:
+        video_capture = cv2.VideoCapture(source)           
        
 
     print('video source : ',source)   
   
     out = cv2.VideoWriter() if video_record else None
-    out.open('output.mp4',cv2.VideoWriter_fourcc(*'mpeg'),25,(768,576),True) if video_record else None
+    out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1280,720),True) if video_record else None
     t_fps=[time.time()]
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
 
@@ -90,7 +93,8 @@ def main(yolo):
                 continue
             except TypeError:
                 continue
-
+        
+            
         else :
             ret, frame = video_capture.read()       
             if ret != True:
