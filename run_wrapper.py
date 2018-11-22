@@ -35,8 +35,8 @@ from PIL import Image
 def main(yolo):
     os.chdir('..')
     use_cloud = 1
-    video_record = 1
-    source='MOT_1.mp4'  # 0 for webcam or youtube or jpg
+    video_record = 0
+    source='walking.mp4'  # 0 for webcam or youtube or jpg
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -45,7 +45,11 @@ def main(yolo):
     colors = {"male":(0,0,255),"female":(255,0,0),"None":(255,255,255)}
 
     device_obj = device_register()
-    
+
+    if use_cloud:
+        gst_out = cv2.VideoWriter('appsrc ! videoconvert ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000 ! x264enc bitrate=1024 ! \
+        h264parse config-interval=10 pt=96 ! mpegtsmux ! queue ! \
+        tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
 
    # Definition of the parameters
     max_cosine_distance = 1.5
@@ -92,9 +96,8 @@ def main(yolo):
             if ret != True:
                 print('Stream End')
                 break;   
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)                  
-
-                
+            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                           
 
         # ______________________________________________________________________________________________________________________________DETECT WITH YOLO 
         t1 = time.time()       
@@ -166,7 +169,7 @@ def main(yolo):
           
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])),colors[str(track.gender)], 2)
             cv2.putText(frame, str(track.track_id),(int(bbox[0]), int(bbox[1])+30),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
-            #cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
+            cv2.putText(frame, str(track.gender),(int(bbox[0]), int(bbox[1])+70),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 200, (0,255,0),3)
             
 
 
@@ -182,8 +185,14 @@ def main(yolo):
         t_fps.pop(0)
         cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
         out.write(frame) if video_record else None
-        cv2.imshow('', frame)       
-        cv2.imwrite('yolo.jpg',frame) if use_cloud == True else False
+        if use_cloud:
+            frame = cv2.resize(frame,(416,416))
+            gst_out.write(frame)
+            print('FPS : {:.2f}'.format(fps))    
+        else:
+            cv2.imshow('', frame) 
+            
+        
        
 
 
@@ -200,6 +209,7 @@ def main(yolo):
         id_stay_old = id_stay
 
     out.release() if video_record else None
+    gst_out.release() if use_cloud else None
     video_capture.release()    
     cv2.destroyAllWindows()
     if FLAGScsv:            
