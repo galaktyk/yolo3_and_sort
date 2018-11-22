@@ -35,8 +35,8 @@ from PIL import Image
 def main(yolo):
     os.chdir('..')
     use_cloud = 0
-    video_record = 1
-    source='linus.mp4'  # 0 for webcam or youtube or jpg
+    video_record = 0
+    source='gstream'  # 0 for webcam or youtube or jpg
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -63,8 +63,11 @@ def main(yolo):
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
     tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3,_next_id = 1)
 
-
-    video_capture = cv2.VideoCapture(source)           
+    if source == 'gstream':
+        video_capture = cv2.VideoCapture('udpsrc port=6006 ! application/x-rtp, payload=96 ! \
+                        rtpjitterbuffer ! rtph264depay ! avdec_h264 ! videoconvert ! appsink sync=false')
+    else:
+        video_capture = cv2.VideoCapture(source)           
        
 
     print('video source : ',source)   
@@ -75,29 +78,13 @@ def main(yolo):
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
 
     while True:
-
-        # get 1 frame                        
-        if source == 'gst.jpg' :
-            try:
-                img_bin = open('gst.jpg', 'rb') 
-                buff = io.BytesIO()
-                buff.write(img_bin.read())
-                buff.seek(0)        
-                frame = numpy.array(Image.open(buff), dtype=numpy.uint8) #RGB   
+          
+        ret, frame = video_capture.read()       
+        if ret != True:
+            print('Stream End')
+            break;   
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                         
-                
-            except OSError :
-                continue
-            except TypeError:
-                continue
-
-        else :
-            ret, frame = video_capture.read()       
-            if ret != True:
-                print('Stream End')
-                break;   
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                           
 
         # ______________________________________________________________________________________________________________________________DETECT WITH YOLO 
         t1 = time.time()       
