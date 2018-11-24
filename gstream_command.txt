@@ -18,7 +18,7 @@ SEND
 1.) out = cv2.VideoWriter('appsrc ! videoconvert ! jpegenc ! tcpserversink host=0.0.0.0 port=6007',0,fps,(416,416))
 2.) out = cv2.VideoWriter('appsrc ! videoconvert ! queue ! x264enc bitrate=512 ! \
 h264parse config-interval=10 ! mpegtsmux ! queue ! tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
-<<<<<<< HEAD
+
 
 RECEIVE
 1.) gst-launch-1.0 tcpclientsrc host=104.199.201.123 port=6007 ! jpegdec ! videoconvert ! autovideosink
@@ -26,17 +26,17 @@ RECEIVE
 
 
 #Sender:
-gst-launch-1.0 videotestsrc ! x264enc ! rtph264pay ! tcpserversink host=0.0.0.0 port=6007
+gst-launch-1.0 videotestsrc is-live=true ! videoconvert ! queue ! x264enc bitrate=1024 ! tcpserversink host=0.0.0.0 port=6007 sync=false
 gst-launch-1.0 videotestsrc ! videoconvert ! jpegenc ! tcpserversink host=0.0.0.0 port=6007
 
 Receiver:
-gst-launch-1.0 tcpclientsrc host=104.199.201.123 port=6007 ! decodebin ! videoconvert ! autovideosink
+gst-launch-1.0 tcpclientsrc host=104.199.201.123 port=6007 ! decodebin ! videoconvert ! autovideosink sync=false
 
 =======
 3.) gst-launch-1.0 filesrc location=linus.mp4 ! decodebin ! x264enc bitrate = 2048 ! \
 h264parse ! rtph264pay pt=96 config-interval=10 ! queue max-size-bytes=0 max-size-buffers=0 \
 max-size-time=5000000000 ! udpsink force-ipv4=true host=104.199.201.123 port=6006
->>>>>>> master
+
 
 RECEIVE
 1.) gst-launch-1.0 tcpclientsrc host=104.199.201.123 port=6007 ! jpegdec ! videoconvert ! autovideosink

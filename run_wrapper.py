@@ -29,14 +29,20 @@ import pickle
 
 from PIL import Image
 
+def connect_RPi():
+    print('[ INFO ] Waiting for RPi')   
+    video_capture = cv2.VideoCapture('udpsrc port=6006 ! application/x-rtp, payload=96 ! \
+                    rtpjitterbuffer ! rtph264depay ! avdec_h264 ! videoconvert ! appsink sync=false')
+    print('[ INFO ] Stream froom RPi is ready')
+    return video_capture
 
 
 
 def main(yolo):
     os.chdir('..')
-    use_cloud = 0
+    send_to_GUI = 0
     video_record = 0
-    source='gstream'  # 0 for webcam or youtube or jpg
+    source='RPi'  # 0 for webcam or youtube or jpg
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -46,9 +52,10 @@ def main(yolo):
 
     device_obj = device_register()
 
-    if use_cloud:
-        gst_out = cv2.VideoWriter('appsrc ! videoconvert ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000 ! x264enc bitrate=2048 ! \
-        h264parse config-interval=10 pt=96 ! mpegtsmux ! queue ! \
+    if send_to_GUI:
+        # send video to note's GUI
+        gst_out = cv2.VideoWriter('appsrc ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000000000 ! videoconvert ! x264enc bitrate=1500 ! \
+        h264parse config-interval=5 pt=96 ! mpegtsmux ! queue ! \
         tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
 
    # Definition of the parameters
@@ -63,31 +70,38 @@ def main(yolo):
     metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
     tracker = Tracker(metric,max_iou_distance=0.7, max_age=50, n_init=3,_next_id = 1)
 
-    if source == 'gstream':
-        video_capture = cv2.VideoCapture('udpsrc port=6006 ! application/x-rtp, payload=96 ! \
-                        rtpjitterbuffer ! rtph264depay ! avdec_h264 ! videoconvert ! appsink sync=false')
+
+
+    if source == 'RPi':
+        video_capture = connect_RPi()                        
     else:
         video_capture = cv2.VideoCapture(source)           
        
 
     print('video source : ',source)   
-  
     out = cv2.VideoWriter() if video_record else None
     out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1280,720),True) if video_record else None
-    t_fps=[time.time()]
+    
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
-
+    t_fps=[time.time()]
     while True:
           
         ret, frame = video_capture.read()       
-        if ret != True:
-            print('Stream End')
-            break;   
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        if not ret:
+            if source == 'RPi':
+                print('[ INFO ] No frame received from RPi: wait for 5 sec')
+                time.sleep(5)
+                cap = connect_stream()
+                continue   
+            else:
+                print('[ INFO ] Stream has ended')
+                break
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         
 
         # ______________________________________________________________________________________________________________________________DETECT WITH YOLO 
-        t1 = time.time()       
+             
 
         [gen_things,dev_things] = yolo.detect_image(frame,boxes_only = True)  
         features_gen = encoder(frame,gen_things[0]) 
@@ -172,7 +186,7 @@ def main(yolo):
         t_fps.pop(0)
         cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
         out.write(frame) if video_record else None
-        if use_cloud:
+        if send_to_GUI:
             frame = cv2.resize(frame,(416,416))
             gst_out.write(frame)
             print('FPS : {:.2f}'.format(fps))    
@@ -196,7 +210,7 @@ def main(yolo):
         id_stay_old = id_stay
 
     out.release() if video_record else None
-    gst_out.release() if use_cloud else None
+    gst_out.release() if send_to_GUI else None
     video_capture.release()    
     cv2.destroyAllWindows()
     if FLAGScsv:            
