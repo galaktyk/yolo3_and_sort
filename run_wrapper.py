@@ -41,8 +41,8 @@ def connect_RPi():
 def main(yolo):
     os.chdir('..')
     send_to_GUI = 0
-    video_record = 0
-    source='RPi'  # 0 for webcam or youtube or jpg
+    video_record = 1
+    source='t1.mp4'  # 0 for webcam or RPi or filename
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -79,8 +79,9 @@ def main(yolo):
        
 
     print('video source : ',source)   
-    out = cv2.VideoWriter() if video_record else None
-    out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1280,720),True) if video_record else None
+    if video_record:
+        out = cv2.VideoWriter() 
+        out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1920,1080),True)
     
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
     t_fps=[time.time()]
