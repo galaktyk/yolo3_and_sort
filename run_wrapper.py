@@ -42,7 +42,7 @@ def main(yolo):
     os.chdir('..')
     send_to_GUI = 0
     video_record = 1
-    source='hey2.mp4'  # 0 for webcam or RPi or filename
+    source='RPi'  # 0 for webcam or RPi or filename
     FLAGScsv= 0
     dict_prof = {}
     if FLAGScsv :
@@ -54,9 +54,7 @@ def main(yolo):
 
     if send_to_GUI:
         # send video to note's GUI
-        gst_out = cv2.VideoWriter('appsrc ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000000000 ! videoconvert ! x264enc bitrate=1500 ! \
-        h264parse config-interval=5 pt=96 ! mpegtsmux ! queue ! \
-        tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
+        gst_out = cv2.VideoWriter('appsrc ! videoconvert ! jpegenc quality=12 ! tcpserversink host=0.0.0.0 port=6007 sync=false', 0, 15, (416, 416))
 
    # Definition of the parameters
     max_cosine_distance = 1.5
@@ -92,7 +90,7 @@ def main(yolo):
             if source == 'RPi':
                 print('[ INFO ] No frame received from RPi: wait for 5 sec')
                 time.sleep(5)
-                cap = connect_stream()
+                video_capture = connect_RPi()
                 continue   
             else:
                 print('[ INFO ] Stream has ended')
