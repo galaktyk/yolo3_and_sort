@@ -24,7 +24,7 @@ class YOLO(object):
         "model_path": 'logs/000/ep068-loss16.822-val_loss18.782.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
         "classes_path": 'model_data/classes.txt',
-        "score" : 0.6,
+        "score" : 0.3,
         "iou" : 0.45,
         "model_image_size" : (416, 416),
         "gpu_num" : 1,
@@ -174,8 +174,8 @@ class YOLO(object):
             predicted_class = self.class_names[c]
             box = out_boxes[i]
             score = out_scores[i]
-
-            label = '{} {:.2f}'.format(predicted_class, score)
+            #label = '{} {:.2f}'.format(predicted_class, score)
+            label = '{:.2f}'.format(score)
            
             top, left, bottom, right = box
             top = max(0, np.floor(top + 0.5).astype('int32'))
@@ -183,8 +183,10 @@ class YOLO(object):
             bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
             
-
-            cv2.rectangle(image, (left, top), (right, bottom), self.colors[predicted_class], 2)           
+            center_dot = ((left+(right-left)/2).astype('int32'),(top+(bottom-top)/4).astype('int32'))
+            print(center_dot)
+            #cv2.rectangle(image, (left, top), (right, bottom), self.colors[predicted_class], 2)       
+            cv2.circle(image, center_dot, 5, (255,0,0), thickness=5)   
             cv2.putText(image,label, (left,top+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.colors[predicted_class])
 
             if self.test == True and filename != '':

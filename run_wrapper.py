@@ -41,10 +41,11 @@ def connect_RPi():
 def main(yolo):
     os.chdir('..')
     send_to_GUI = 0
-    video_record = 1
-    source='RPi'  # 0 for webcam or RPi or filename
+    video_record = 0
+    source='rtsp://admin:@note533#@11.0.100.50:554'  # 0 for webcam or RPi or filename or 'rtsp://admin:@note533#@11.0.100.50:554'
     FLAGScsv= 0
     dict_prof = {}
+
     if FLAGScsv :
         csv_obj=save_csv() 
     id_stay_old = [[],[]]  
@@ -73,7 +74,8 @@ def main(yolo):
     if source == 'RPi':
         video_capture = connect_RPi()                        
     else:
-        video_capture = cv2.VideoCapture(source)           
+        video_capture = cv2.VideoCapture(source)       
+        video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1) 
        
 
     print('video source : ',source)   
@@ -84,7 +86,9 @@ def main(yolo):
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
     t_fps=[time.time()]
     while True:
-          
+        for i in range(round(20/8)):
+            video_capture.grab()
+  
         ret, frame = video_capture.read()       
         if not ret:
             if source == 'RPi':
@@ -93,8 +97,11 @@ def main(yolo):
                 video_capture = connect_RPi()
                 continue   
             else:
-                print('[ INFO ] Stream has ended')
-                break
+                video_capture = cv2.VideoCapture(source)    
+                video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1) 
+                continue       
+                #print('[ INFO ] Stream has ended')
+                #break
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         
