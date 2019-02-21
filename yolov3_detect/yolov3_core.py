@@ -183,10 +183,10 @@ class YOLO(object):
             bottom = min(image.shape[0], np.floor(bottom + 0.5).astype('int32'))
             right = min(image.shape[1], np.floor(right + 0.5).astype('int32'))
             
-            center_dot = ((left+(right-left)/2).astype('int32'),(top+(bottom-top)/4).astype('int32'))
-            print(center_dot)
-            #cv2.rectangle(image, (left, top), (right, bottom), self.colors[predicted_class], 2)       
-            cv2.circle(image, center_dot, 5, (255,0,0), thickness=5)   
+            #center_dot = ((left+(right-left)/2).astype('int32'),(top+(bottom-top)/4).astype('int32'))
+            #print(center_dot)
+            cv2.rectangle(image, (left, top), (right, bottom), self.colors[predicted_class], 2)       
+            #cv2.circle(image, center_dot, 5, (255,0,0), thickness=5)   
             cv2.putText(image,label, (left,top+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.colors[predicted_class])
 
             if self.test == True and filename != '':
