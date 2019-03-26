@@ -11,7 +11,8 @@ import cv2
 
 def test(yolo):
 
-    test_images = glob.glob('testing/*.jpg')
+    test_images = glob.glob(FLAGS.img_path+os.sep+'*.jpg')
+    print('[ INFO ] Number of test images',len(test_images))
     for x in test_images:       
         print(x)
         cv_image = cv2.imread(x)
@@ -38,10 +39,8 @@ if __name__ == '__main__':
         default=YOLO.get_defaults("model_path")
     )
 
-    parser.add_argument(
-        '--test', default=True, action="store_true",
-        help='Image detection mode, will ignore all positional arguments'
-    )  
+    parser.add_argument('--test', default=True, action="store_true",help='Image detection mode, will ignore all positional arguments')  
+    parser.add_argument('--img_path', default='testing', help='Image path')  
 
     FLAGS = parser.parse_args()
 

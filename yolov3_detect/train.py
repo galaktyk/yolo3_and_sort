@@ -1,7 +1,3 @@
-"""
-Retrain the YOLO model for your own dataset.
-"""
-
 import numpy as np
 import keras.backend as K
 from keras.layers import Input, Lambda
@@ -9,12 +5,9 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import TensorBoard, ModelCheckpoint, ReduceLROnPlateau, EarlyStopping, Callback
 
-
 from yolo3.model import preprocess_true_boxes, yolo_body, tiny_yolo_body, yolo_loss
 from yolo3.utils import get_random_data
 from sklearn.utils import shuffle
-
- 
 
 import glob
 import os
@@ -38,7 +31,7 @@ def _main():
     num_classes = len(class_names)
     anchors = get_anchors(anchors_path)
 
-    input_shape = (416,416) # multiple of 32, hw
+    input_shape = (416,416) # hw
 
    
     model = create_model(input_shape, anchors, num_classes,freeze_body=2,weights_path='model_data/yolov3-spp_weights.h5')
@@ -52,9 +45,7 @@ def _main():
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1)
 
     val_split = 0.2 # validation set ratio
-
-
-    
+   
     im_names = [os.path.basename(x).replace('txt','jpg') for x in ann_paths]
 
     lines = []
@@ -62,21 +53,20 @@ def _main():
         with open(x) as f:
             lines.append(f.read().replace('\n',' '))
 
-
     lines,im_names=shuffle(lines,im_names,random_state=0)
 
-    assert len(lines) == len(im_names)
+    assert len(lines) == len(im_names) # check if number of ann == imgs 
+    """
+    if not <condition>:
+        raise AssertionError()
+    """
 
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
 
-
-
-    # Train with frozen layers first, to get a stable loss.
-    # Adjust num epochs to your dataset. This step is enough to obtain a not bad model.
     
     model.compile(optimizer=Adam(lr=1e-3), loss={
-        # use custom yolo_loss Lambda layer.
+        # use custom yolo_loss
         'yolo_loss': lambda y_true, y_pred: y_pred})
 
     batch_size = 32
@@ -85,15 +75,14 @@ def _main():
             steps_per_epoch=max(1, num_train//batch_size),
             validation_data=data_generator_wrapper(lines[num_train:],im_names[num_train:], batch_size, input_shape, anchors, num_classes),
             validation_steps=max(1, num_val//batch_size),
-            epochs=8,
+            epochs=50,
             initial_epoch=0,
             verbose=2,
             callbacks=[logging,logging2, checkpoint])
     model.save_weights(log_dir + 'trained_weights_stage_1.h5')
 
-    print('[ INFO ] Unfreeze and continue training, to fine-tune.')
-    # Train longer if the result is not good.
-   
+    print('[ INFO ] Unfreeze and continue training)
+    
     for i in range(len(model.layers)):
         model.layers[i].trainable = True
     model.compile(optimizer=Adam(lr=1e-4), loss={'yolo_loss': lambda y_true, y_pred: y_pred}) # recompile to apply the change
@@ -106,12 +95,12 @@ def _main():
         validation_data=data_generator_wrapper(lines[num_train:],im_names[num_train:], batch_size, input_shape, anchors, num_classes),
         validation_steps=max(1, num_val//batch_size),
         epochs=100,
-        initial_epoch=8,
+        initial_epoch=50,
         verbose=2,
         callbacks=[logging, logging2,checkpoint, reduce_lr, early_stopping])
     model.save_weights(log_dir + 'trained_weights_final.h5')
 
-    # Further training if needed.
+   
 
 
 def get_classes(classes_path):
@@ -131,7 +120,7 @@ def get_anchors(anchors_path):
 
 def create_model(input_shape, anchors, num_classes, load_pretrained=True, freeze_body=2,
             weights_path='model_data/yolov3-spp_weights.h5'):
-    '''create the training model'''
+    '''create training model'''
     K.clear_session() # get a new session
     image_input = Input(shape=(None, None, 3))
     h, w = input_shape

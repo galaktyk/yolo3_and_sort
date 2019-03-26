@@ -10,15 +10,11 @@ import cv2
 
 
 def compose(*funcs):
-    """Compose arbitrarily many functions, evaluated left to right.
-
-    Reference: https://mathieularose.com/function-composition-in-python/
-    """
-    # return lambda x: reduce(lambda v, f: f(v), funcs, x)
+    #combine function
     if funcs:
         return reduce(lambda f, g: lambda *a, **kw: g(f(*a, **kw)), funcs)
     else:
-        raise ValueError('Composition of empty sequence not supported.')
+        raise ValueError('empty')
 
 def letterbox_image(image, size):
     '''resize image with unchanged aspect ratio using padding'''
@@ -44,7 +40,7 @@ def rand(a=0, b=1):
 def get_random_data(annotation_line,im_name,input_shape, random=True, max_boxes=20, jitter=.3, hue=.1, sat=1.5, val=1.5, proc_img=True):
     # 1 image 1 line
    
-    line = annotation_line.split()#!!!!
+    line = annotation_line.split() 
     dataset_folder = os.path.normpath(os.getcwd() + os.sep + os.pardir + '/dataset/images')
     image = Image.open(dataset_folder+os.sep+im_name)
     iw, ih = image.size

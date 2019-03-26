@@ -21,9 +21,9 @@ os.chdir(sys.path[0])
 
 class YOLO(object):
     _defaults = {
-        "model_path": 'logs/000/ep068-loss16.822-val_loss18.782.h5',
+        "model_path": 'logs/000/yolov3-legacy.h5',
         "anchors_path": 'model_data/yolo_anchors.txt',
-        "classes_path": 'model_data/classes.txt',
+        "classes_path": 'model_data/coco_classes.txt',
         "score" : 0.3,
         "iou" : 0.45,
         "model_image_size" : (416, 416),
@@ -62,26 +62,29 @@ class YOLO(object):
         return np.array(anchors).reshape(-1, 2)
 
     def generate(self):
-        model_path = os.path.expanduser(self.model_path)    
+        model_path = os.path.expanduser(self.model_path)
+        assert model_path.endswith('.h5'), 'Keras model or weights must be a .h5 file.'
 
         # Load model, or construct model and load weights.
         num_anchors = len(self.anchors)
         num_classes = len(self.class_names)
-      
-        try: #try load structure and weights
+        is_tiny_version = num_anchors==6 # default setting
+        try:
             self.yolo_model = load_model(model_path, compile=False)
             
-        except: # create structure and load weights
+        except:
             print(num_classes)
             self.yolo_model = yolo_body(Input(shape=(416,416,3)), num_anchors//3, num_classes)
             self.yolo_model.load_weights(self.model_path) # make sure model, anchors and classes match
         else:
-            print('load model fail')
+            assert self.yolo_model.layers[-1].output_shape[-1] == \
+                num_anchors/len(self.yolo_model.output) * (num_classes + 5), \
+                'Mismatch between model and given anchor and class sizes'
 
         #plot_model(self.yolo_model, to_file='model.png',show_shapes=1)
 
         print('{} model, anchors, and classes loaded.'.format(model_path))     
-        # box colors
+      
         self.colors = {"male":(0,0,255),"female":(255,0,0),"laptop":(250,47,211),"phone":(80,40,200),"tablet":(49,228,211),"book":(255,255,255)}
         
         # Generate output tensor targets for filtered bounding boxes.
@@ -95,7 +98,8 @@ class YOLO(object):
         start = timer()
 
         if self.model_image_size != (None, None):
-       
+            assert self.model_image_size[0]%32 == 0, 'Multiples of 32 required'
+            assert self.model_image_size[1]%32 == 0, 'Multiples of 32 required'
             boxed_image = letterbox_image(image, tuple(reversed(self.model_image_size)))
         else:
             new_image_size = (image.width - (image.width % 32),
@@ -124,7 +128,7 @@ class YOLO(object):
 
             for i, c in reversed(list(enumerate(out_classes))):
                 predicted_class = self.class_names[c]
-                if (predicted_class == 'male') or (predicted_class == 'female'):                    
+                if (predicted_class == 'person'): #or (predicted_class == 'female'):                    
                     box = out_boxes[i]
                    # score = out_scores[i]  
                     x = int(box[1])  
@@ -140,7 +144,8 @@ class YOLO(object):
                     return_boxes_gen.append([x,y,w,h])
                     return_classes_gen.append(predicted_class)
 
-                else:                    
+                else:         
+                    continue           
                     box = out_boxes[i]
                    # score = out_scores[i]  
                     x = int(box[1])  
@@ -168,6 +173,8 @@ class YOLO(object):
             out_f = open('testing/pred_txt/'+filename, 'w')
         for i, c in reversed(list(enumerate(out_classes))):
             predicted_class = self.class_names[c]
+            if predicted_class != 'person' :
+                continue
             box = out_boxes[i]
             score = out_scores[i]
             label = '{} {:.2f}'.format(predicted_class, score)
@@ -181,9 +188,9 @@ class YOLO(object):
             
             #center_dot = ((left+(right-left)/2).astype('int32'),(top+(bottom-top)/4).astype('int32'))
             #print(center_dot)
-            cv2.rectangle(image, (left, top), (right, bottom), self.colors[predicted_class], 2)       
+            cv2.rectangle(image, (left, top), (right, bottom), (255,255,255), 2)       
             #cv2.circle(image, center_dot, 5, (255,0,0), thickness=5)   
-            cv2.putText(image,label, (left,top+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, self.colors[predicted_class])
+            cv2.putText(image,label, (left,top+10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255))
 
             if self.test == True and filename != '':
                 out_box = '{} {:.2f} {} {} {} {}'.format(predicted_class,score,  left, top, right, bottom)                
@@ -192,7 +199,7 @@ class YOLO(object):
          
 
         end = timer()
-        #print(end - start)ทดส
+        #print(end - start)
         if self.test == True and filename != '':
             out_f.close()
         return image

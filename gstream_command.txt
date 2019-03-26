@@ -33,9 +33,7 @@ Receiver:
 gst-launch-1.0 tcpclientsrc host=104.199.201.123 port=6007 ! decodebin ! videoconvert ! autovideosink sync=false
 
 =======
-3.) gst-launch-1.0 filesrc location=linus.mp4 ! decodebin ! x264enc bitrate = 2048 ! \
-h264parse ! rtph264pay pt=96 config-interval=10 ! queue max-size-bytes=0 max-size-buffers=0 \
-max-size-time=5000000000 ! udpsink force-ipv4=true host=104.199.201.123 port=6006
+3.) gst-launch-1.0 filesrc location=linus.mp4 ! decodebin ! x264enc bitrate = 2048 ! h264parse ! rtph264pay pt=96 config-interval=10 ! queue max-size-bytes=0 max-size-buffers=0 max-size-time=5000000000 ! udpsink force-ipv4=true host=104.199.201.123 port=6006
 
 
 RECEIVE

@@ -37,12 +37,11 @@ def connect_RPi():
     return video_capture
 
 
-
 def main(yolo):
     os.chdir('..')
     send_to_GUI = 0
-    video_record = 0
-    source='rtsp://admin:@note533#@11.0.100.50:554'  # 0 for webcam or RPi or filename or 'rtsp://admin:@note533#@11.0.100.50:554'
+    video_record = 1
+    source='RPi'  # 0 for webcam or RPi or filename
     FLAGScsv= 0
     dict_prof = {}
 
@@ -81,7 +80,7 @@ def main(yolo):
     print('video source : ',source)   
     if video_record:
         out = cv2.VideoWriter() 
-        out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1280,720),True)
+        out.open('output.mp4',cv2.VideoWriter_fourcc(*'H264'),25,(1920,1080),True)
     
 #  ___________________________________________________________________________________________________________________________________________MAIN LOOP
     t_fps=[time.time()]
@@ -100,8 +99,7 @@ def main(yolo):
                 video_capture = cv2.VideoCapture(source)    
                 video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1) 
                 continue       
-                #print('[ INFO ] Stream has ended')
-                #break
+               
 
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         
@@ -109,7 +107,7 @@ def main(yolo):
         # ______________________________________________________________________________________________________________________________DETECT WITH YOLO 
              
 
-        [gen_things,dev_things] = yolo.detect_image(frame,boxes_only = True)  
+        [gen_things,dev_things] = yolo.detect_image(frame,boxes_only = True)  # main detect function HERE
         features_gen = encoder(frame,gen_things[0]) 
         detections_gen = [Detection(bbox, 1.0, feature_gen) for bbox, feature_gen in zip(gen_things[0], features_gen)]     
 
@@ -117,7 +115,6 @@ def main(yolo):
         detections_dev = [Detection(bbox, 1.0, feature_dev) for bbox, feature_dev in zip(dev_things[0], features_dev)]     
 
         device_obj.startframe(detections_dev)
-
         
         # ______________________________________________________________________________________________________________________________DRAW DEVICE
 
@@ -138,10 +135,7 @@ def main(yolo):
 
         # __________________________________________________________________________________________________________________________DRAW TRACK RECTANGLE      
         
-
-
-   
-
+  
         id_stay = [[],[]]
       
 
@@ -182,16 +176,13 @@ def main(yolo):
 
         
 
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for show 
-
-
-
-
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR) #change to BGR for showing with OpenCV
+        # __________________________________________________________________________________________________________________________ FRAME RATE things
         t_fps.append(time.time())
         fps = 1/(t_fps[1]-t_fps[0])
         t_fps.pop(0)
         cv2.putText(frame, 'FPS : {:.2f}'.format(fps),(5,20),cv2.FONT_HERSHEY_SIMPLEX, 5e-3 * 100, (0,0,255),2)
-        out.write(frame) if video_record else None
+        out.write(frame) if video_record else None # write frame if record to file
         if send_to_GUI:
             frame = cv2.resize(frame,(416,416))
             gst_out.write(frame)
@@ -199,15 +190,9 @@ def main(yolo):
         else:
             cv2.imshow('', frame) 
             
-        
-       
-
-
-      
-        if (id_stay != id_stay_old) and FLAGScsv:            
-            csv_obj.save_event(id_stay)
-            
-
+              
+        if (id_stay != id_stay_old) and FLAGScsv:   # save csv if people in frame have changed         
+            csv_obj.save_event(id_stay)          
 
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -228,6 +213,6 @@ if __name__ == '__main__':
     try:
         main(YOLO())
     except:
-        #csv_obj.save_profile(dict_prof)
+        # don't stop
         raise
 

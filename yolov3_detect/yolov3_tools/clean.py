@@ -13,7 +13,10 @@ def main(args):
 
     txt_path = glob.iglob(args.annotations+'/*.txt', recursive=True)
     txt_name = set([os.path.basename(x).replace('.txt','') for x in txt_path])
-    txt_name.remove('classes')
+    try :
+        txt_name.remove('classes')
+    except:
+        pass
     print('All annotations : ',len(txt_name))
 
 
@@ -22,7 +25,7 @@ def main(args):
 
     #####################################################################################
     if (len(images_name-txt_name) != 0) or (len(txt_name-images_name) != 0):
-        print('\n',images_name-txt_name,txt_name-images_name)
+        #print('\n',images_name-txt_name,txt_name-images_name)
         msg = '\nClean?'
         shall = input("%s (y/n) " % msg).lower() == 'y'
 
