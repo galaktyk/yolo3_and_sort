@@ -4,8 +4,7 @@ Retrain class : Male Female Laptop Phone Tablet Book
 - Add video streaming support using Gstreamer+OpenCV, needed to compile Gstreammer with openCV to get this works.  
 - Add .csv database.
 ## Overview
-
-![alt text](./overview.png)
+![alt text](./overview2.png)
 ## Architecture
 Legacy YOLO3_SPP with changes in output dim.
 ![alt text](./short_yolo3.png)
